@@ -1,10 +1,10 @@
 <?php
 /**
- * API for MediaWiki 1.8+
+ *
  *
  * Created on Jun 20, 2007
  *
- * Copyright © 2007 Roan Kattouw <Firstname>.<Lastname>@home.nl
+ * Copyright © 2007 Roan Kattouw <Firstname>.<Lastname>@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,15 @@ class ApiRollback extends ApiBase {
 		parent::__construct( $main, $action );
 	}
 
-	private $mTitleObj = null, $mUser = null;
+	/**
+	 * @var Title
+	 */
+	private $mTitleObj = null;
+
+	/**
+	 * @var User
+	 */
+	private $mUser = null;
 
 	public function execute() {
 		$params = $this->extractRequestParams();
@@ -47,7 +55,7 @@ class ApiRollback extends ApiBase {
 		$titleObj = $this->getTitle();
 		$articleObj = new Article( $titleObj );
 		$summary = ( isset( $params['summary'] ) ? $params['summary'] : '' );
-		$details = null;
+		$details = array();
 		$retval = $articleObj->doRollback( $this->getUser(), $summary, $params['token'], $params['markbot'], $details );
 
 		if ( $retval ) {
@@ -170,7 +178,7 @@ class ApiRollback extends ApiBase {
 			$this->dieUsageMsg( array( 'invalidtitle', $params['title'] ) );
 		}
 		if ( !$this->mTitleObj->exists() ) {
-			$this->dieUsageMsg( array( 'notanarticle' ) );
+			$this->dieUsageMsg( 'notanarticle' );
 		}
 
 		return $this->mTitleObj;
@@ -181,6 +189,10 @@ class ApiRollback extends ApiBase {
 			'api.php?action=rollback&title=Main%20Page&user=Catrope&token=123ABC',
 			'api.php?action=rollback&title=Main%20Page&user=217.121.114.116&token=123ABC&summary=Reverting%20vandalism&markbot=1'
 		);
+	}
+
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/API:Rollback';
 	}
 
 	public function getVersion() {

@@ -1,10 +1,10 @@
 <?php
 /**
- * API for MediaWiki 1.8+
+ *
  *
  * Created on Sep 27, 2008
  *
- * Copyright © 2008 Roan Kattow <Firstname>,<Lastname>@home.nl
+ * Copyright © 2008 Roan Kattouw <Firstname>.<Lastname>@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,10 @@ class ApiQueryDuplicateFiles extends ApiQueryGeneratorBase {
 		$this->run( $resultPageSet );
 	}
 
+	/**
+	 * @param $resultPageSet ApiPageSet
+	 * @return
+	 */
 	private function run( $resultPageSet = null ) {
 		$params = $this->extractRequestParams();
 		$namespaces = $this->getPageSet()->getAllTitlesByNamespace();
@@ -162,6 +166,10 @@ class ApiQueryDuplicateFiles extends ApiQueryGeneratorBase {
 			'api.php?action=query&titles=File:Albert_Einstein_Head.jpg&prop=duplicatefiles',
 			'api.php?action=query&generator=allimages&prop=duplicatefiles',
 		);
+	}
+
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/API:Properties#duplicatefiles_.2F_df';
 	}
 
 	public function getVersion() {
