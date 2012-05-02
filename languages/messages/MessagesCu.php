@@ -61,8 +61,8 @@ $namespaceAliases = array(
 );
 
 $magicWords = array(
-	'redirect'              => array( '0', '#ПРѢНАПРАВЛЄНИѤ', '#REDIRECT' ),
-	'language'              => array( '0', '#ѨꙀꙐКЪ:', '#LANGUAGE:' ),
+	'redirect'                => array( '0', '#ПРѢНАПРАВЛЄНИѤ', '#REDIRECT' ),
+	'language'                => array( '0', '#ѨꙀꙐКЪ:', '#LANGUAGE:' ),
 );
 
 $defaultDateFormat = 'mdy';
@@ -145,6 +145,7 @@ $messages = array(
 'category_header'        => 'катигорїѩ ⁖ $1 ⁖ страницѧ',
 'subcategories'          => 'подъкатигорїѩ',
 'hidden-categories'      => '{{PLURAL:$1|съкрꙑта катигорїꙗ|съкрꙑти катигорїи|съкрꙑтꙑ катигорїѩ}}',
+'category-subcat-count'  => '{{PLURAL:$2|Сѥи катигорїи тъкъмо сꙗ подъкатигорїꙗ ѥстъ|Сѥи катигорїи {{PLURAL:$1|ѥдина подъкатигорїꙗ ѥстъ|2 подъкатигорїи ѥстє|$1 подъкатигорїѩ сѫтъ}} · а вьсѩ жє подъкатигорїѩ число $2 ѥстъ}}',
 'listingcontinuesabbrev' => '· вѧщє',
 
 'linkprefix' => '/^(.*?)(„|«)$/sD',
@@ -262,9 +263,8 @@ $messages = array(
 'nstab-category'  => 'катигорїꙗ',
 
 # General errors
-'error'         => 'блаꙁна',
-'viewsource'    => 'страницѧ источьнъ обраꙁъ',
-'viewsourcefor' => '$1 дѣлꙗ',
+'error'      => 'блаꙁна',
+'viewsource' => 'страницѧ источьнъ обраꙁъ',
 
 # Login and logout pages
 'yourname'                => 'твоѥ имѧ',
@@ -319,6 +319,8 @@ $messages = array(
 'noarticletext-nopermission' => 'нꙑнѣ с̑ьдє ничєсожє нє напьсано ѥстъ ⁙
 [[Special:Search/{{PAGENAME}}|си страницѧ имѧ искати]] дроугꙑ страницѧ или
 <span class="plainlinks">[{{fullurl:{{#Special:Log}}|page={{FULLPAGENAMEE}}}} съвѧꙁанꙑ їсторїѩ видѣти]</span> можєши',
+'userpage-userdoesnotexist'  => 'польꙃєватєльска мѣста ⁖ $1 ⁖ нꙑнѣ нѣстъ ⁙
+прѣдъ сътворѥниѥмь или исправлѥниѥмь си страницѧ помꙑсли жє ащє исто тъ дѣиство ноуждьно ли',
 'clearyourcache'             => 'НАРОЧИТО: По съхранѥнии можєши обити своѥго съмотрила съхранъ да видѣлъ би мѣнꙑ ⁙ Mozilla ли Firefox ли Safari ли жьмꙑи Shift а мꙑшиѭ жьми Reload или жьми Ctrl-Shift-R (Cmd-Shift-R вън Apple Mac)  ⁙ Konqueror ли жьми кромѣ Reload или F5 ⁙ Опєрꙑ польꙃєватєльмъ можєть бꙑти ноужда пльнѣ поничьжити ихъ съмотрила съхранъ въ Tools > Preferences ⁙ IE ли жьмꙑи Ctrl а мꙑшиѭ жьми Refresh или жьми Ctrl-F5',
 'note'                       => "'''НАРОЧИТО:'''",
 'editing'                    => 'исправлѥниѥ: $1',
@@ -328,15 +330,16 @@ $messages = array(
 'template-protected'         => '(ꙁабранєно ѥстъ)',
 
 # History pages
-'viewpagelogs' => 'си страницѧ їсторїѩ',
-'cur'          => 'нꙑ҃н',
-'last'         => 'пс҃лд',
-'page_first'   => 'прьва страница',
-'page_last'    => 'послѣдьнꙗ страница',
-'histfirst'    => 'прьвꙑ',
-'histlast'     => 'послѣдьнꙗ',
-'historysize'  => '{{PLURAL:$1|1 баитъ|$1 баита|$1 баитъ}}',
-'historyempty' => '(поусто)',
+'viewpagelogs'         => 'си страницѧ їсторїѩ',
+'cur'                  => 'нꙑ҃н',
+'last'                 => 'пс҃лд',
+'page_first'           => 'прьва страница',
+'page_last'            => 'послѣдьнꙗ страница',
+'history-show-deleted' => 'тъкъмо поничьжєнꙑ мѣнꙑ',
+'histfirst'            => 'прьвꙑ',
+'histlast'             => 'послѣдьнꙗ',
+'historysize'          => '{{PLURAL:$1|1 баитъ|$1 баита|$1 баитъ}}',
+'historyempty'         => '(поусто)',
 
 # Revision feed
 'history-feed-title'          => 'мѣнъ їсторїꙗ',
@@ -351,8 +354,6 @@ $messages = array(
 'revdelete-log'              => 'какъ съмꙑслъ :',
 'pagehist'                   => 'страницѧ їсторїꙗ',
 'deletedhist'                => 'поничьжєна їсторїꙗ',
-'revdelete-summary'          => 'мѣнꙑ опьсаниѥ',
-'revdelete-uname'            => 'польꙃєватєлꙗ имѧ',
 'revdelete-otherreason'      => 'инъ или допльнитєл҄ьнъ съмꙑслъ :',
 'revdelete-reasonotherlist'  => 'инъ съмꙑслъ',
 
@@ -423,7 +424,7 @@ $messages = array(
 'group-sysop'      => 'съмотритєлє',
 'group-bureaucrat' => 'чинодатєлє',
 
-'group-user-member'       => 'польꙃєватєл҄ь',
+'group-user-member'       => '{{GENDER:$1|польꙃєватєл҄ь}}',
 'group-bot-member'        => 'аѵтоматъ',
 'group-sysop-member'      => 'съмотритєл҄ь',
 'group-bureaucrat-member' => 'чинодатєл҄ь',
@@ -533,7 +534,7 @@ $messages = array(
 'statistics-pages'        => 'страницѧ',
 'statistics-files'        => 'положєнꙑ дѣла',
 
-'disambiguations'     => 'мъногосъмꙑслиꙗ',
+'disambiguations'     => 'страницѧ ижє съвѧꙁи съ мъногосъмꙑслиꙗ имѫтъ',
 'disambiguationspage' => 'Template:мъногосъмꙑслиѥ',
 
 'brokenredirects-edit'   => 'исправи',
@@ -573,16 +574,14 @@ $messages = array(
 'deletedcontributions-title' => 'поничьжєнꙑ добродѣꙗниꙗ',
 
 # Special:LinkSearch
-'linksearch'    => 'вънѣщьнѩ съвѧꙁи',
+'linksearch'    => 'вънѣщьн҄ь съвѧꙁь исканиѥ',
 'linksearch-ok' => 'ищи',
 
 # Special:ListUsers
 'listusers-submit' => 'виждь',
 
 # Special:Log/newusers
-'newuserlogpage'              => 'новъ мѣстъ сътворѥниꙗ їсторїꙗ',
-'newuserlog-create-entry'     => 'новъ польꙃєватєл҄ь',
-'newuserlog-autocreate-entry' => 'польꙃєватєлꙗ мѣсто аѵтоматичьно сътворєно ѥстъ',
+'newuserlogpage' => 'новъ мѣстъ сътворѥниꙗ їсторїꙗ',
 
 # E-mail user
 'emailuser' => 'посъли єпїстолѫ',
@@ -611,7 +610,6 @@ $messages = array(
 'actioncomplete'  => 'дѣиство сътворєно ѥстъ',
 'deletedtext'     => 'страница ⁖ $1 ⁖ поничьжєна ѥстъ ⁙
 виждь ⁖ $2 ⁖ послѣдьнъ поничьжєниѩ дѣлꙗ',
-'deletedarticle'  => '⁖ [[$1]] ⁖ поничьжєнъ ѥстъ',
 'dellogpage'      => 'поничьжєниꙗ їсторїꙗ',
 'deletionlog'     => 'поничьжєниꙗ їсторїꙗ',
 'deletecomment'   => 'какъ съмꙑслъ :',
@@ -682,8 +680,6 @@ $messages = array(
 'movepage-moved-redirect' => 'прѣнаправлѥниѥ сътворѥно бѣ',
 'movedto'                 => 'прѣимєновано въ',
 'movetalk'                => 'си страницѧ бєсѣдꙑ прѣимєнованиѥ',
-'1movedto2'               => '⁖ [[$1]] ⁖ нарєчєнъ ⁖ [[$2]] ⁖ ѥстъ',
-'1movedto2_redir'         => '[[$1]] нарєчєнъ [[$2]] врьхоу прѣнаправлѥниꙗ ѥстъ.',
 'movelogpage'             => 'прѣимєнованиꙗ їсторїꙗ',
 'movereason'              => 'какъ съмꙑслъ :',
 'move-leave-redirect'     => 'прѣнаправлѥниꙗ сътворѥниѥ',
@@ -745,7 +741,8 @@ $messages = array(
 'autosumm-new' => 'нова страница ⁖ $1 ⁖ сътворєна  ѥстъ',
 
 # Size units
-'size-bytes' => '$1 Б҃',
+'size-bytes'     => '$1 Б҃',
+'size-kilobytes' => '$1 Х҃Б',
 
 # Special:Version
 'version'                  => 'MediaWiki обраꙁъ',

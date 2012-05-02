@@ -79,8 +79,7 @@ Bitte prüfe, ob du das Bild in voller Auflösung vorliegen hast und lade dieses
 'img-auth-nologinnWL' => 'Du bist nicht angemeldet und „$1“ ist nicht in der weissen Liste.',
 
 # Special:ListFiles
-'listfiles-summary' => 'Diese Spezialseite listet alle hochgeladenen Dateien auf. Standardmässig werden die zuletzt hochgeladenen Dateien zuerst angezeigt. Durch einen Klick auf die Spaltenüberschriften kann die Sortierung umgedreht werden oder es kann nach einer anderen Spalte sortiert werden.',
-'listfiles_size'    => 'Grösse',
+'listfiles_size' => 'Grösse',
 
 # File description page
 'filehist-dimensions' => 'Masse',
@@ -107,7 +106,7 @@ Die Ausgabe kann durch die Auswahl des Logbuchtyps, des Benutzers oder des Seite
 
 # Media information
 'imagemaxsize'   => "Maximale Bildgrösse:<br />''(für Dateibeschreibungsseiten)''",
-'thumbsize'      => 'Standardgrösse der Vorschaubilder (Thumbnails):',
+'thumbsize'      => 'Standardgrösse der Vorschaubilder:',
 'file-info'      => 'Dateigrösse: $1, MIME-Typ: $2',
 'file-info-size' => '$1 × $2 Pixel, Dateigrösse: $3, MIME-Typ: $4',
 'svg-long-desc'  => 'SVG-Datei, Basisgrösse: $1 × $2 Pixel, Dateigrösse: $3',

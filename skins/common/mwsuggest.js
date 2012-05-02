@@ -30,8 +30,8 @@ window.os_mouse_moved = false;
 // delay between keypress and suggestion (in ms)
 window.os_search_timeout = 250;
 // these pairs of inputs/forms will be autoloaded at startup
-window.os_autoload_inputs = new Array('searchInput', 'searchInput2', 'powerSearchText', 'searchText');
-window.os_autoload_forms = new Array('searchform', 'searchform2', 'powersearch', 'search' );
+window.os_autoload_inputs = ['searchInput', 'searchInput2', 'powerSearchText', 'searchText'];
+window.os_autoload_forms = ['searchform', 'searchform2', 'powersearch', 'search'];
 // if we stopped the service
 window.os_is_stopped = false;
 // max lines to show in suggest table
@@ -50,18 +50,15 @@ window.os_animation_timer = null;
 window.os_enabled = true;
 
 /**
- * <datalist> is a new HTML5 element that allows you to manually supply
- * suggestion lists and have them rendered according to the right platform
- * conventions.  Opera as of version 11 has a fatal problem: the suggestion
- * lags behind what the user types by one keypress.  (Reported as DSK-276870 to
- * Opera's secret bug tracker.)  However, Firefox 4 supports it without
- * problems, so Opera is just blacklisted here.  Ideally we wouldn't blacklist
- * future versions, in case they fix it, but the fallback isn't bad at all and
- * the failure if they don't fix it is very annoying, so in this case we'll
- * blacklist future versions too.
+ * <datalist> is a new HTML5 element that allows you to manually
+ * supply suggestion lists and have them rendered according to the
+ * right platform conventions.  Opera as of version 11 has a fatal
+ * problem: the suggestion lags behind what the user types by one
+ * keypress.  (Reported as DSK-276870 to Opera's secret bug tracker.)
+ * There are also problems with other browsers, including Firefox and
+ * Safari: See bug 31602 for details.
  */
-window.os_use_datalist = 'list' in document.createElement( 'input' )
-	&& $.client.profile().name != 'opera';
+window.os_use_datalist = false;
 
 /** Timeout timer class that will fetch the results */
 window.os_Timer = function( id, r, query ) {
@@ -426,7 +423,7 @@ window.os_setupDatalist = function( r, results ) {
 	}
 	s.setAttribute( 'list', r.container );
 
-	r.results = new Array();
+	r.results = [];
 	r.resultCount = results.length;
 	r.visible = true;
 	for ( i = 0; i < results.length; i++ ) {
@@ -439,7 +436,7 @@ window.os_setupDatalist = function( r, results ) {
 };
 
 /** Fetch namespaces from checkboxes or hidden fields in the search form,
-    if none defined use wgSearchNamespaces global */
+    if none defined use wgSearchNamespaces */
 window.os_getNamespaces = function( r ) {
 	var namespaces = '';
 	var elements = document.forms[r.searchform].elements;
@@ -458,7 +455,7 @@ window.os_getNamespaces = function( r ) {
 		}
 	}
 	if( namespaces == '' ) {
-		namespaces = wgSearchNamespaces.join('|');
+		namespaces = mw.config.get( 'wgSearchNamespaces' ).join('|');
 	}
 	return namespaces;
 };
@@ -481,7 +478,7 @@ window.os_delayedFetch = function() {
 	var query = os_timer.query;
 	os_timer = null;
 	var path = mw.config.get( 'wgMWSuggestTemplate' ).replace( "{namespaces}", os_getNamespaces( r ) )
-									.replace( "{dbname}", wgDBname )
+									.replace( "{dbname}", mw.config.get( 'wgDBname' ) )
 									.replace( "{searchTerms}", os_encodeQuery( query ) );
 
 	// try to get from cache, if not fetch using ajax
@@ -646,7 +643,7 @@ window.os_createResultTable = function( r, results ) {
 	var c = document.getElementById( r.container );
 	var width = c.offsetWidth - os_operaWidthFix( c.offsetWidth );
 	var html = '<table class="os-suggest-results" id="' + r.resultTable + '" style="width: ' + width + 'px;">';
-	r.results = new Array();
+	r.results = [];
 	r.resultCount = results.length;
 	for( i = 0; i < results.length; i++ ) {
 		var title = os_decodeValue( results[i] );
