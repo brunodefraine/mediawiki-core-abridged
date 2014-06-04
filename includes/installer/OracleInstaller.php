@@ -91,12 +91,12 @@ class OracleInstaller extends DatabaseInstaller {
 
 	public function submitConnectForm() {
 		// Get variables from the request
-		$newValues = $this->setVarsFromRequest(
+		$newValues = $this->setVarsFromRequest( array(
 			'wgDBserver',
 			'wgDBprefix',
 			'wgDBuser',
 			'wgDBpassword'
-		);
+		) );
 		$this->parent->setVar( 'wgDBname', $this->getVar( 'wgDBuser' ) );
 
 		// Validate them
@@ -247,6 +247,7 @@ class OracleInstaller extends DatabaseInstaller {
 				return $status;
 			}
 		}
+
 		$this->db = $status->value;
 		$this->setupSchemaVars();
 

@@ -15,7 +15,8 @@ class SideBarTest extends MediaWikiLangTestCase {
 
 	/** Build $this->messages array */
 	private function initMessagesHref() {
-		# List of default messages for the sidebar:
+		# List of default messages for the sidebar. The sidebar doesn't care at
+		# all whether they are full URLs, interwiki links or local titles.
 		$URL_messages = array(
 			'mainpage',
 			'portal-url',
@@ -25,10 +26,16 @@ class SideBarTest extends MediaWikiLangTestCase {
 			'helppage',
 		);
 
+		# We're assuming that isValidURI works as advertised: it's also
+		# tested separately, in tests/phpunit/includes/HttpTest.php.
 		foreach ( $URL_messages as $m ) {
 			$titleName = MessageCache::singleton()->get( $m );
-			$title = Title::newFromText( $titleName );
-			$this->messages[$m]['href'] = $title->getLocalURL();
+			if ( Http::isValidURI( $titleName ) ) {
+				$this->messages[$m]['href'] = $titleName;
+			} else {
+				$title = Title::newFromText( $titleName );
+				$this->messages[$m]['href'] = $title->getLocalURL();
+			}
 		}
 	}
 
@@ -90,6 +97,11 @@ class SideBarTest extends MediaWikiLangTestCase {
 	 * @covers SkinTemplate::addToSidebarPlain
 	 */
 	public function testExternalUrlsRequireADescription() {
+		$this->setMwGlobals( array(
+			'wgNoFollowLinks' => true,
+			'wgNoFollowDomainExceptions' => array(),
+			'wgNoFollowNsExceptions' => array(),
+		) );
 		$this->assertSidebar(
 			array( 'Title' => array(
 				# ** http://www.mediawiki.org/| Home
@@ -144,7 +156,6 @@ class SideBarTest extends MediaWikiLangTestCase {
 		);
 	}
 
-
 	#### Attributes for external links ##########################
 	private function getAttribs() {
 		# Sidebar text we will use everytime
@@ -163,6 +174,8 @@ class SideBarTest extends MediaWikiLangTestCase {
 	public function testTestAttributesAssertionHelper() {
 		$this->setMwGlobals( array(
 			'wgNoFollowLinks' => true,
+			'wgNoFollowDomainExceptions' => array(),
+			'wgNoFollowNsExceptions' => array(),
 			'wgExternalLinkTarget' => false,
 		) );
 		$attribs = $this->getAttribs();

@@ -31,8 +31,6 @@
  * UploadBase and subclasses are the backend of MediaWiki's file uploads.
  * The frontends are formed by ApiUpload and SpecialUpload.
  *
- * See also includes/docs/upload.txt
- *
  * @author Brion Vibber
  * @author Bryan Tong Minh
  * @author Michael Dale
@@ -44,7 +42,7 @@ abstract class UploadBase {
 	protected $mFilteredName, $mFinalExtension;
 	protected $mLocalFile, $mFileSize, $mFileProps;
 	protected $mBlackListedExtensions;
-	protected $mJavaDetected;
+	protected $mJavaDetected, $mSVGNSError;
 
 	protected static $safeXmlEncodings = array( 'UTF-8', 'ISO-8859-1', 'ISO-8859-2', 'UTF-16', 'UTF-32' );
 
@@ -105,7 +103,7 @@ abstract class UploadBase {
 		}
 
 		# Check php's file_uploads setting
-		return wfIsHipHop() || wfIniGetBool( 'file_uploads' );
+		return wfIsHHVM() || wfIniGetBool( 'file_uploads' );
 	}
 
 	/**
@@ -250,7 +248,7 @@ abstract class UploadBase {
 
 	/**
 	 * @param string $srcPath the source path
-	 * @return string the real path if it was a virtual URL
+	 * @return string|bool the real path if it was a virtual URL Returns false on failure
 	 */
 	function getRealPath( $srcPath ) {
 		wfProfileIn( __METHOD__ );
@@ -259,12 +257,15 @@ abstract class UploadBase {
 			// @todo just make uploads work with storage paths
 			// UploadFromStash loads files via virtual URLs
 			$tmpFile = $repo->getLocalCopy( $srcPath );
-			$tmpFile->bind( $this ); // keep alive with $this
-			wfProfileOut( __METHOD__ );
-			return $tmpFile->getPath();
+			if ( $tmpFile ) {
+				$tmpFile->bind( $this ); // keep alive with $this
+			}
+			$path = $tmpFile ? $tmpFile->getPath() : false;
+		} else {
+			$path = $srcPath;
 		}
 		wfProfileOut( __METHOD__ );
-		return $srcPath;
+		return $path;
 	}
 
 	/**
@@ -319,8 +320,8 @@ abstract class UploadBase {
 
 		$error = '';
 		if ( !wfRunHooks( 'UploadVerification',
-			array( $this->mDestName, $this->mTempPath, &$error ) ) )
-		{
+			array( $this->mDestName, $this->mTempPath, &$error ) )
+		) {
 			wfProfileOut( __METHOD__ );
 			return array( 'status' => self::HOOK_ABORTED, 'error' => $error );
 		}
@@ -394,7 +395,6 @@ abstract class UploadBase {
 		return true;
 	}
 
-
 	/**
 	 * Verifies that it's ok to include the uploaded file
 	 *
@@ -420,7 +420,6 @@ abstract class UploadBase {
 				return array( 'filetype-mime-mismatch', $this->mFinalExtension, $mime );
 			}
 		}
-
 
 		$handler = MediaHandler::getHandler( $mime );
 		if ( $handler ) {
@@ -475,9 +474,10 @@ abstract class UploadBase {
 				return array( 'uploadscripted' );
 			}
 			if ( $this->mFinalExtension == 'svg' || $mime == 'image/svg+xml' ) {
-				if ( $this->detectScriptInSvg( $this->mTempPath ) ) {
+				$svgStatus = $this->detectScriptInSvg( $this->mTempPath );
+				if ( $svgStatus !== false ) {
 					wfProfileOut( __METHOD__ );
-					return array( 'uploadscripted' );
+					return $svgStatus;
 				}
 			}
 		}
@@ -613,6 +613,8 @@ abstract class UploadBase {
 
 		if ( $this->mDesiredDestName != $filename && $comparableName != $filename ) {
 			$warnings['badfilename'] = $filename;
+			// Debugging for bug 62241
+			wfDebugLog( 'upload', "Filename: '$filename', mDesiredDestName: '$this->mDesiredDestName', comparableName: '$comparableName'" );
 		}
 
 		// Check whether the file extension is on the unwanted list
@@ -656,7 +658,11 @@ abstract class UploadBase {
 		// Check dupes against archives
 		$archivedImage = new ArchivedFile( null, 0, "{$hash}.{$this->mFinalExtension}" );
 		if ( $archivedImage->getID() > 0 ) {
-			$warnings['duplicate-archive'] = $archivedImage->getName();
+			if ( $archivedImage->userCan( File::DELETED_FILE ) ) {
+				$warnings['duplicate-archive'] = $archivedImage->getName();
+			} else {
+				$warnings['duplicate-archive'] = '';
+			}
 		}
 
 		wfProfileOut( __METHOD__ );
@@ -722,7 +728,8 @@ abstract class UploadBase {
 		# exclamation mark, so restrict file name to 240 bytes.
 		if ( strlen( $this->mFilteredName ) > 240 ) {
 			$this->mTitleError = self::FILENAME_TOO_LONG;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		}
 
 		/**
@@ -735,7 +742,8 @@ abstract class UploadBase {
 		$nt = Title::makeTitleSafe( NS_FILE, $this->mFilteredName );
 		if ( is_null( $nt ) ) {
 			$this->mTitleError = self::ILLEGAL_FILENAME;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		}
 		$this->mFilteredName = $nt->getDBkey();
 
@@ -776,19 +784,22 @@ abstract class UploadBase {
 
 		if ( $this->mFinalExtension == '' ) {
 			$this->mTitleError = self::FILETYPE_MISSING;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		} elseif ( $blackListedExtensions ||
 				( $wgCheckFileExtensions && $wgStrictFileExtensions &&
-					!$this->checkFileExtensionList( $ext, $wgFileExtensions ) ) ) {
+					!$this->checkFileExtension( $this->mFinalExtension, $wgFileExtensions ) ) ) {
 			$this->mBlackListedExtensions = $blackListedExtensions;
 			$this->mTitleError = self::FILETYPE_BADTYPE;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		}
 
 		// Windows may be broken with special characters, see bug XXX
 		if ( wfIsWindows() && !preg_match( '/^[\x0-\x7f]*$/', $nt->getText() ) ) {
 			$this->mTitleError = self::WINDOWS_NONASCII_FILENAME;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		}
 
 		# If there was more than one "extension", reassemble the base
@@ -801,10 +812,12 @@ abstract class UploadBase {
 
 		if ( strlen( $partname ) < 1 ) {
 			$this->mTitleError = self::MIN_LENGTH_PARTNAME;
-			return $this->mTitle = null;
+			$this->mTitle = null;
+			return $this->mTitle;
 		}
 
-		return $this->mTitle = $nt;
+		$this->mTitle = $nt;
+		return $this->mTitle;
 	}
 
 	/**
@@ -1097,7 +1110,6 @@ abstract class UploadBase {
 		return false;
 	}
 
-
 	/**
 	 * Check a whitelist of xml encodings that are known not to be interpreted differently
 	 * by the server's xml parser (expat) and some common browsers.
@@ -1155,11 +1167,40 @@ abstract class UploadBase {
 
 	/**
 	 * @param $filename string
-	 * @return bool
+	 * @return mixed false of the file is verified (does not contain scripts), array otherwise.
 	 */
 	protected function detectScriptInSvg( $filename ) {
-		$check = new XmlTypeCheck( $filename, array( $this, 'checkSvgScriptCallback' ) );
-		return $check->filterMatch;
+		$this->mSVGNSError = false;
+		$check = new XmlTypeCheck(
+			$filename,
+			array( $this, 'checkSvgScriptCallback' ),
+			true,
+			array( 'processing_instruction_handler' => 'UploadBase::checkSvgPICallback' )
+		);
+		if ( $check->wellFormed !== true ) {
+			// Invalid xml (bug 58553)
+			return array( 'uploadinvalidxml' );
+		} elseif ( $check->filterMatch ) {
+			if ( $this->mSVGNSError ) {
+				return array( 'uploadscriptednamespace', $this->mSVGNSError );
+			}
+			return array( 'uploadscripted' );
+		}
+		return false;
+	}
+
+	/**
+	 * Callback to filter SVG Processing Instructions.
+	 * @param $target string processing instruction name
+	 * @param $data string processing instruction attribute and value
+	 * @return bool (true if the filter identified something bad)
+	 */
+	public static function checkSvgPICallback( $target, $data ) {
+		// Don't allow external stylesheets (bug 57550)
+		if ( preg_match( '/xml-stylesheet/i', $target ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -1169,7 +1210,51 @@ abstract class UploadBase {
 	 * @return bool
 	 */
 	public function checkSvgScriptCallback( $element, $attribs ) {
-		$strippedElement = $this->stripXmlNamespace( $element );
+		list( $namespace, $strippedElement ) = $this->splitXmlNamespace( $element );
+
+		static $validNamespaces = array(
+			'',
+			'adobe:ns:meta/',
+			'http://creativecommons.org/ns#',
+			'http://inkscape.sourceforge.net/dtd/sodipodi-0.dtd',
+			'http://ns.adobe.com/adobeillustrator/10.0/',
+			'http://ns.adobe.com/adobesvgviewerextensions/3.0/',
+			'http://ns.adobe.com/extensibility/1.0/',
+			'http://ns.adobe.com/flows/1.0/',
+			'http://ns.adobe.com/illustrator/1.0/',
+			'http://ns.adobe.com/imagereplacement/1.0/',
+			'http://ns.adobe.com/pdf/1.3/',
+			'http://ns.adobe.com/photoshop/1.0/',
+			'http://ns.adobe.com/saveforweb/1.0/',
+			'http://ns.adobe.com/variables/1.0/',
+			'http://ns.adobe.com/xap/1.0/',
+			'http://ns.adobe.com/xap/1.0/g/',
+			'http://ns.adobe.com/xap/1.0/g/img/',
+			'http://ns.adobe.com/xap/1.0/mm/',
+			'http://ns.adobe.com/xap/1.0/rights/',
+			'http://ns.adobe.com/xap/1.0/stype/dimensions#',
+			'http://ns.adobe.com/xap/1.0/stype/font#',
+			'http://ns.adobe.com/xap/1.0/stype/manifestitem#',
+			'http://ns.adobe.com/xap/1.0/stype/resourceevent#',
+			'http://ns.adobe.com/xap/1.0/stype/resourceref#',
+			'http://ns.adobe.com/xap/1.0/t/pg/',
+			'http://purl.org/dc/elements/1.1/',
+			'http://purl.org/dc/elements/1.1',
+			'http://schemas.microsoft.com/visio/2003/svgextensions/',
+			'http://sodipodi.sourceforge.net/dtd/sodipodi-0.dtd',
+			'http://web.resource.org/cc/',
+			'http://www.freesoftware.fsf.org/bkchem/cdml',
+			'http://www.inkscape.org/namespaces/inkscape',
+			'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+			'http://www.w3.org/2000/svg',
+		);
+
+		if ( !in_array( $namespace, $validNamespaces ) ) {
+			wfDebug( __METHOD__ . ": Non-svg namespace '$namespace' in uploaded file.\n" );
+			// @TODO return a status object to a closure in XmlTypeCheck, for MW1.21+
+			$this->mSVGNSError = $namespace;
+			return true;
+		}
 
 		/*
 		 * check for elements that can contain javascript
@@ -1188,6 +1273,12 @@ abstract class UploadBase {
 		# SVG reported in Feb '12 that used xml:stylesheet to generate javascript block
 		if ( $strippedElement == 'stylesheet' ) {
 			wfDebug( __METHOD__ . ": Found scriptable element '$element' in uploaded file.\n" );
+			return true;
+		}
+
+		# Block iframes, in case they pass the namespace check
+		if ( $strippedElement == 'iframe' ) {
+			wfDebug( __METHOD__ . ": iframe in uploaded file.\n" );
 			return true;
 		}
 
@@ -1262,6 +1353,19 @@ abstract class UploadBase {
 		}
 
 		return false; //No scripts detected
+	}
+
+	/**
+	 * Divide the element name passed by the xml parser to the callback into URI and prifix.
+	 * @param $name string
+	 * @return array containing the namespace URI and prefix
+	 */
+	private static function splitXmlNamespace( $element ) {
+		// 'http://www.w3.org/2000/svg:script' -> array( 'http://www.w3.org/2000/svg', 'script' )
+		$parts = explode( ':', strtolower( $element ) );
+		$name = array_pop( $parts );
+		$ns = implode( ':', $parts );
+		return array( $ns, $name );
 	}
 
 	/**

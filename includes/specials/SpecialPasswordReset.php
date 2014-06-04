@@ -112,6 +112,8 @@ class SpecialPasswordReset extends FormSpecialPage {
 		// from a FormSpecialPage class.
 		$form->setWrapperLegend( false );
 
+		$form->addHiddenFields( $this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
+
 		$i = 0;
 		if ( isset( $wgPasswordResetRoutes['username'] ) && $wgPasswordResetRoutes['username'] ) {
 			$i++;
@@ -208,7 +210,8 @@ class SpecialPasswordReset extends FormSpecialPage {
 		$firstUser = $users[0];
 
 		if ( !$firstUser instanceof User || !$firstUser->getID() ) {
-			return array( array( 'nosuchuser', $data['Username'] ) );
+			// Don't parse username as wikitext (bug 65501)
+			return array( array( 'nosuchuser', wfEscapeWikiText( $data['Username'] ) ) );
 		}
 
 		// Check against the rate limiter
@@ -235,7 +238,7 @@ class SpecialPasswordReset extends FormSpecialPage {
 		// All the users will have the same email address
 		if ( $firstUser->getEmail() == '' ) {
 			// This won't be reachable from the email route, so safe to expose the username
-			return array( array( 'noemail', $firstUser->getName() ) );
+			return array( array( 'noemail', wfEscapeWikiText( $firstUser->getName() ) ) );
 		}
 
 		// We need to have a valid IP address for the hook, but per bug 18347, we should
@@ -275,7 +278,7 @@ class SpecialPasswordReset extends FormSpecialPage {
 
 		$title = $this->msg( 'passwordreset-emailtitle' );
 
-		$this->result = $firstUser->sendMail( $title->escaped(), $this->email->text() );
+		$this->result = $firstUser->sendMail( $title->text(), $this->email->text() );
 
 		if ( isset( $data['Capture'] ) && $data['Capture'] ) {
 			// Save the user, will be used if an error occurs when sending the email

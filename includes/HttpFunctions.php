@@ -30,7 +30,7 @@
  * @ingroup HTTP
  */
 class Http {
-	static $httpEngine = false;
+	static public $httpEngine = false;
 
 	/**
 	 * Perform an HTTP request
@@ -130,7 +130,8 @@ class Http {
 			$domainParts = array_reverse( $domainParts );
 
 			$domain = '';
-			for ( $i = 0; $i < count( $domainParts ); $i++ ) {
+			$countParts = count( $domainParts );
+			for ( $i = 0; $i < $countParts; $i++ ) {
 				$domainPart = $domainParts[$i];
 				if ( $i == 0 ) {
 					$domain = $domainPart;
@@ -204,7 +205,7 @@ class MWHttpRequest {
 	protected $followRedirects = false;
 
 	/**
-	 * @var  CookieJar
+	 * @var CookieJar
 	 */
 	protected $cookieJar;
 
@@ -294,8 +295,11 @@ class MWHttpRequest {
 				return new CurlHttpRequest( $url, $options );
 			case 'php':
 				if ( !wfIniGetBool( 'allow_url_fopen' ) ) {
-					throw new MWException( __METHOD__ . ': allow_url_fopen needs to be enabled for pure PHP' .
-						' http requests to work. If possible, curl should be used instead. See http://php.net/curl.' );
+					throw new MWException( __METHOD__ . ': allow_url_fopen ' .
+						'needs to be enabled for pure PHP http requests to ' .
+						'work. If possible, curl should be used instead. See ' .
+						'http://php.net/curl.'
+					);
 				}
 				return new PhpHttpRequest( $url, $options );
 			default:
@@ -344,13 +348,6 @@ class MWHttpRequest {
 		} elseif ( getenv( "http_proxy" ) ) {
 			$this->proxy = getenv( "http_proxy" );
 		}
-	}
-
-	/**
-	 * Set the referrer header
-	 */
-	public function setReferer( $url ) {
-		$this->setHeader( 'Referer', $url );
 	}
 
 	/**
@@ -437,18 +434,12 @@ class MWHttpRequest {
 	 * @return Status
 	 */
 	public function execute() {
-		global $wgTitle;
-
 		wfProfileIn( __METHOD__ );
 
 		$this->content = "";
 
 		if ( strtoupper( $this->method ) == "HEAD" ) {
 			$this->headersOnly = true;
-		}
-
-		if ( is_object( $wgTitle ) && !isset( $this->reqHeaders['Referer'] ) ) {
-			$this->setReferer( wfExpandUrl( $wgTitle->getFullURL(), PROTO_CURRENT ) );
 		}
 
 		$this->proxySetup(); // set up any proxy as needed
@@ -642,12 +633,16 @@ class MWHttpRequest {
 	/**
 	 * Returns the final URL after all redirections.
 	 *
-	 * Relative values of the "Location" header are incorrect as stated in RFC, however they do happen and modern browsers support them.
-	 * This function loops backwards through all locations in order to build the proper absolute URI - Marooned at wikia-inc.com
+	 * Relative values of the "Location" header are incorrect as
+	 * stated in RFC, however they do happen and modern browsers
+	 * support them.  This function loops backwards through all
+	 * locations in order to build the proper absolute URI - Marooned
+	 * at wikia-inc.com
 	 *
-	 * Note that the multiple Location: headers are an artifact of CURL -- they
-	 * shouldn't actually get returned this way. Rewrite this when bug 29232 is
-	 * taken care of (high-level redirect handling rewrite).
+	 * Note that the multiple Location: headers are an artifact of
+	 * CURL -- they shouldn't actually get returned this way. Rewrite
+	 * this when bug 29232 is taken care of (high-level redirect
+	 * handling rewrite).
 	 *
 	 * @return string
 	 */
@@ -678,7 +673,8 @@ class MWHttpRequest {
 				} else {
 					$url = parse_url( $this->url );
 					if ( isset( $url['host'] ) ) {
-						return $url['scheme'] . '://' . $url['host'] . $locations[$countLocations - 1];
+						return $url['scheme'] . '://' . $url['host'] .
+							$locations[$countLocations - 1];
 					}
 				}
 			} else {
@@ -730,17 +726,18 @@ class CurlHttpRequest extends MWHttpRequest {
 
 		$this->curlOptions[CURLOPT_PROXY] = $this->proxy;
 		$this->curlOptions[CURLOPT_TIMEOUT] = $this->timeout;
-		$this->curlOptions[CURLOPT_CONNECTTIMEOUT_MS] = $this->connectTimeout * 1000;
+
+		// Only supported in curl >= 7.16.2
+		if ( defined( 'CURLOPT_CONNECTTIMEOUT_MS' ) ) {
+			$this->curlOptions[CURLOPT_CONNECTTIMEOUT_MS] = $this->connectTimeout * 1000;
+		}
+
 		$this->curlOptions[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_0;
 		$this->curlOptions[CURLOPT_WRITEFUNCTION] = $this->callback;
 		$this->curlOptions[CURLOPT_HEADERFUNCTION] = array( $this, "readHeader" );
 		$this->curlOptions[CURLOPT_MAXREDIRS] = $this->maxRedirects;
 		$this->curlOptions[CURLOPT_ENCODING] = ""; # Enable compression
 
-		/* not sure these two are actually necessary */
-		if ( isset( $this->reqHeaders['Referer'] ) ) {
-			$this->curlOptions[CURLOPT_REFERER] = $this->reqHeaders['Referer'];
-		}
 		$this->curlOptions[CURLOPT_USERAGENT] = $this->reqHeaders['User-Agent'];
 
 		$this->curlOptions[CURLOPT_SSL_VERIFYHOST] = $this->sslVerifyHost ? 2 : 0;
@@ -842,12 +839,13 @@ class PhpHttpRequest extends MWHttpRequest {
 			$this->postData = wfArrayToCgi( $this->postData );
 		}
 
-		if ( $this->parsedUrl['scheme'] != 'http' &&
-			 $this->parsedUrl['scheme'] != 'https' ) {
+		if ( $this->parsedUrl['scheme'] != 'http'
+			&& $this->parsedUrl['scheme'] != 'https' ) {
 			$this->status->fatal( 'http-invalid-scheme', $this->parsedUrl['scheme'] );
 		}
 
 		$this->reqHeaders['Accept'] = "*/*";
+		$this->reqHeaders['Connection'] = 'Close';
 		if ( $this->method == 'POST' ) {
 			// Required for HTTP 1.0 POSTs
 			$this->reqHeaders['Content-Length'] = strlen( $this->postData );
@@ -856,52 +854,47 @@ class PhpHttpRequest extends MWHttpRequest {
 			}
 		}
 
-		$options = array();
+		// Set up PHP stream context
+		$options = array(
+			'http' => array(
+				'method' => $this->method,
+				'header' => implode( "\r\n", $this->getHeaderList() ),
+				'protocol_version' => '1.1',
+				'max_redirects' => $this->followRedirects ? $this->maxRedirects : 0,
+				'ignore_errors' => true,
+				'timeout' => $this->timeout,
+				// Curl options in case curlwrappers are installed
+				'curl_verify_ssl_host' => $this->sslVerifyHost ? 2 : 0,
+				'curl_verify_ssl_peer' => $this->sslVerifyCert,
+			),
+			'ssl' => array(
+				'verify_peer' => $this->sslVerifyCert,
+				'SNI_enabled' => true,
+			),
+		);
+
 		if ( $this->proxy ) {
-			$options['proxy'] = $this->urlToTCP( $this->proxy );
-			$options['request_fulluri'] = true;
+			$options['http']['proxy'] = $this->urlToTCP( $this->proxy );
+			$options['http']['request_fulluri'] = true;
 		}
-
-		if ( !$this->followRedirects ) {
-			$options['max_redirects'] = 0;
-		} else {
-			$options['max_redirects'] = $this->maxRedirects;
-		}
-
-		$options['method'] = $this->method;
-		$options['header'] = implode( "\r\n", $this->getHeaderList() );
-		// Note that at some future point we may want to support
-		// HTTP/1.1, but we'd have to write support for chunking
-		// in version of PHP < 5.3.1
-		$options['protocol_version'] = "1.0";
-
-		// This is how we tell PHP we want to deal with 404s (for example) ourselves.
-		// Only works on 5.2.10+
-		$options['ignore_errors'] = true;
 
 		if ( $this->postData ) {
-			$options['content'] = $this->postData;
+			$options['http']['content'] = $this->postData;
 		}
-
-		$options['timeout'] = $this->timeout;
 
 		if ( $this->sslVerifyHost ) {
-			$options['CN_match'] = $this->parsedUrl['host'];
-		}
-		if ( $this->sslVerifyCert ) {
-			$options['verify_peer'] = true;
+			$options['ssl']['CN_match'] = $this->parsedUrl['host'];
 		}
 
 		if ( is_dir( $this->caInfo ) ) {
-			$options['capath'] = $this->caInfo;
+			$options['ssl']['capath'] = $this->caInfo;
 		} elseif ( is_file( $this->caInfo ) ) {
-			$options['cafile'] = $this->caInfo;
+			$options['ssl']['cafile'] = $this->caInfo;
 		} elseif ( $this->caInfo ) {
 			throw new MWException( "Invalid CA info passed: {$this->caInfo}" );
 		}
 
-		$scheme = $this->parsedUrl['scheme'];
-		$context = stream_context_create( array( "$scheme" => $options ) );
+		$context = stream_context_create( $options );
 
 		$this->headerList = array();
 		$reqCount = 0;

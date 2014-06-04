@@ -36,12 +36,13 @@ if ( count( $args ) < 1 || isset( $options['help'] ) ) {
 	if ( is_file( $filename ) ) {
 
 		$title = isset( $options['title'] ) ? $options['title'] : titleFromFilename( $filename );
-		$title = Title::newFromURL( $title );
+		$title = Title::newFromText( $title );
 
 		if ( is_object( $title ) ) {
 
 			echo "\nUsing title '" . $title->getPrefixedText() . "'...";
 			if ( !$title->exists() || !isset( $options['nooverwrite'] ) ) {
+				RequestContext::getMain()->setTitle( $title );
 
 				$text = file_get_contents( $filename );
 				$user = isset( $options['user'] ) ? $options['user'] : 'Maintenance script';
