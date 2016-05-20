@@ -73,7 +73,7 @@ $wgConfigRegistry = array(
  * MediaWiki version number
  * @since 1.2
  */
-$wgVersion = '1.23.13';
+$wgVersion = '1.23.14';
 
 /**
  * Name of the site. It must be changed in LocalSettings.php
@@ -3887,7 +3887,13 @@ $wgDebugTidy = false;
 $wgRawHtml = false;
 
 /**
- * Set a default target for external links, e.g. _blank to pop up a new window
+ * Set a default target for external links, e.g. _blank to pop up a new window.
+ *
+ * This will also set the "noreferrer" and "noopener" link rel to prevent the
+ * attack described at https://mathiasbynens.github.io/rel-noopener/ .
+ * Some older browsers may not support these link attributes, hence
+ * setting $wgExternalLinkTarget to _blank may represent a security risk
+ * to some of your users.
  */
 $wgExternalLinkTarget = false;
 
