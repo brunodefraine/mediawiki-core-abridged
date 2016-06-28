@@ -1,37 +1,33 @@
 {
-	/* Common */
-
 	// Enforcing
+	"bitwise": true,
 	"eqeqeq": true,
-	"es3": true,
-	"latedef": true,
+	"esversion": 3,
+	"freeze": true,
+	"futurehostile": true,
+	"latedef": "nofunc",
 	"noarg": true,
 	"nonew": true,
+	"strict": false,
 	"undef": true,
 	"unused": true,
 
-	/* Local */
-
-	// FIXME: Deprecated, handle these with node-jscs instead.
-	// Handled here because we still have inline overrides in some places.
-	"camelcase": true,
-	"nomen": true,
-
-	// Enforcing
-	"bitwise": true,
-	"forin": false,
-	"regexp": false,
-	"strict": false,
 	// Relaxing
 	"laxbreak": true,
-	"smarttabs": true,
 	"multistr": true,
+
 	// Environment
 	"browser": true,
 
-	"predef": [
-		"mediaWiki",
-		"jQuery",
-		"QUnit"
-	]
+	"globals": {
+		"require": false,
+		"module": false,
+		"mediaWiki": true,
+		"JSON": true,
+		"OO": true,
+		"mwPerformance": true,
+		"jQuery": false,
+		"QUnit": false,
+		"sinon": false
+	}
 }

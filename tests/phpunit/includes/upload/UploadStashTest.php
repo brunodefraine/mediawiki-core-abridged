@@ -7,7 +7,7 @@
  */
 class UploadStashTest extends MediaWikiTestCase {
 	/**
-	 * @var Array of UploadStashTestUser
+	 * @var array Array of UploadStashTestUser
 	 */
 	public static $users;
 
@@ -20,23 +20,23 @@ class UploadStashTest extends MediaWikiTestCase {
 		parent::setUp();
 
 		// Setup a file for bug 29408
-		$this->bug29408File = __DIR__ . '/bug29408';
+		$this->bug29408File = wfTempDir() . '/bug29408';
 		file_put_contents( $this->bug29408File, "\x00" );
 
-		self::$users = array(
+		self::$users = [
 			'sysop' => new TestUser(
 				'Uploadstashtestsysop',
 				'Upload Stash Test Sysop',
 				'upload_stash_test_sysop@example.com',
-				array( 'sysop' )
+				[ 'sysop' ]
 			),
 			'uploader' => new TestUser(
 				'Uploadstashtestuser',
 				'Upload Stash Test User',
 				'upload_stash_test_user@example.com',
-				array()
+				[]
 			)
-		);
+		];
 	}
 
 	protected function tearDown() {
@@ -68,13 +68,13 @@ class UploadStashTest extends MediaWikiTestCase {
 		$stash->removeFile( $file->getFileKey() );
 	}
 
-	public function provideInvalidRequests() {
-		return array(
+	public static function provideInvalidRequests() {
+		return [
 			'Check failure on bad wpFileKey' =>
-				array( new FauxRequest( array( 'wpFileKey' => 'foo' ) ) ),
+				[ new FauxRequest( [ 'wpFileKey' => 'foo' ] ) ],
 			'Check failure on bad wpSessionKey' =>
-				array( new FauxRequest( array( 'wpSessionKey' => 'foo' ) ) ),
-		);
+				[ new FauxRequest( [ 'wpSessionKey' => 'foo' ] ) ],
+		];
 	}
 
 	/**
@@ -84,18 +84,18 @@ class UploadStashTest extends MediaWikiTestCase {
 		$this->assertFalse( UploadFromStash::isValidRequest( $request ) );
 	}
 
-	public function provideValidRequests() {
-		return array(
+	public static function provideValidRequests() {
+		return [
 			'Check good wpFileKey' =>
-				array( new FauxRequest( array( 'wpFileKey' => 'testkey-test.test' ) ) ),
+				[ new FauxRequest( [ 'wpFileKey' => 'testkey-test.test' ] ) ],
 			'Check good wpSessionKey' =>
-				array( new FauxRequest( array( 'wpFileKey' => 'testkey-test.test' ) ) ),
+				[ new FauxRequest( [ 'wpFileKey' => 'testkey-test.test' ] ) ],
 			'Check key precedence' =>
-				array( new FauxRequest( array(
+				[ new FauxRequest( [
 					'wpFileKey' => 'testkey-test.test',
 					'wpSessionKey' => 'foo'
-				) ) ),
-		);
+				] ) ],
+		];
 	}
 	/**
 	 * @dataProvider provideValidRequests

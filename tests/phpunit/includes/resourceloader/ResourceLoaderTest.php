@@ -2,62 +2,48 @@
 
 class ResourceLoaderTest extends ResourceLoaderTestCase {
 
-	protected static $resourceLoaderRegisterModulesHook;
-
 	protected function setUp() {
 		parent::setUp();
 
-		// $wgResourceLoaderLESSFunctions, $wgResourceLoaderLESSImportPaths; $wgResourceLoaderLESSVars;
-
-		$this->setMwGlobals( array(
-			'wgResourceLoaderLESSFunctions' => array(
-				'test-sum' => function ( $frame, $less ) {
-					$sum = 0;
-					foreach ( $frame[2] as $arg ) {
-						$sum += (int)$arg[1];
-					}
-					return $sum;
-				},
-			),
-			'wgResourceLoaderLESSImportPaths' => array(
-				dirname( dirname( __DIR__  ) ) . '/data/less/common',
-			),
-			'wgResourceLoaderLESSVars' => array(
+		$this->setMwGlobals( [
+			'wgResourceLoaderLESSImportPaths' => [
+				dirname( dirname( __DIR__ ) ) . '/data/less/common',
+			],
+			'wgResourceLoaderLESSVars' => [
 				'foo'  => '2px',
 				'Foo' => '#eeeeee',
 				'bar' => 5,
-			),
-		) );
+			],
+		] );
 	}
 
-	/* Hook Methods */
-
-	/**
-	 * ResourceLoaderRegisterModules hook
-	 */
-	public static function resourceLoaderRegisterModules( &$resourceLoader ) {
-		self::$resourceLoaderRegisterModulesHook = true;
-
-		return true;
-	}
-
-	/* Provider Methods */
 	public static function provideValidModules() {
-		return array(
-			array( 'TEST.validModule1', new ResourceLoaderTestModule() ),
-		);
+		return [
+			[ 'TEST.validModule1', new ResourceLoaderTestModule() ],
+		];
 	}
 
-	/* Test Methods */
-
 	/**
-	 * Ensures that the ResourceLoaderRegisterModules hook is called when a new ResourceLoader object is constructed
+	 * Ensures that the ResourceLoaderRegisterModules hook is called when a new
+	 * ResourceLoader object is constructed.
 	 * @covers ResourceLoader::__construct
 	 */
 	public function testCreatingNewResourceLoaderCallsRegistrationHook() {
-		self::$resourceLoaderRegisterModulesHook = false;
+		$resourceLoaderRegisterModulesHook = false;
+
+		$this->setMwGlobals( 'wgHooks', [
+			'ResourceLoaderRegisterModules' => [
+				function ( &$resourceLoader ) use ( &$resourceLoaderRegisterModulesHook ) {
+					$resourceLoaderRegisterModulesHook = true;
+				}
+			]
+		] );
+
 		$resourceLoader = new ResourceLoader();
-		$this->assertTrue( self::$resourceLoaderRegisterModulesHook );
+		$this->assertTrue(
+			$resourceLoaderRegisterModulesHook,
+			'Hook ResourceLoaderRegisterModules called'
+		);
 
 		return $resourceLoader;
 	}
@@ -79,14 +65,24 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	 * @covers ResourceLoaderFileModule::compileLessFile
 	 */
 	public function testLessFileCompilation() {
-		$context = self::getResourceLoaderContext();
+		$context = $this->getResourceLoaderContext();
 		$basePath = __DIR__ . '/../../data/less/module';
-		$module = new ResourceLoaderFileModule( array(
+		$module = new ResourceLoaderFileModule( [
 			'localBasePath' => $basePath,
-			'styles' => array( 'styles.less' ),
-		) );
+			'styles' => [ 'styles.less' ],
+		] );
+		$module->setName( 'test.less' );
 		$styles = $module->getStyles( $context );
 		$this->assertStringEqualsFile( $basePath . '/styles.css', $styles['all'] );
+	}
+
+	/**
+	 * Strip @noflip annotations from CSS code.
+	 * @param string $css
+	 * @return string
+	 */
+	private static function stripNoflip( $css ) {
+		return str_replace( '/*@noflip*/ ', '', $css );
 	}
 
 	/**
@@ -106,31 +102,207 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	}
 
 	public static function providePackedModules() {
-		return array(
-			array(
+		return [
+			[
 				'Example from makePackedModulesString doc comment',
-				array( 'foo.bar', 'foo.baz', 'bar.baz', 'bar.quux' ),
+				[ 'foo.bar', 'foo.baz', 'bar.baz', 'bar.quux' ],
 				'foo.bar,baz|bar.baz,quux',
-			),
-			array(
+			],
+			[
 				'Example from expandModuleNames doc comment',
-				array( 'jquery.foo', 'jquery.bar', 'jquery.ui.baz', 'jquery.ui.quux' ),
+				[ 'jquery.foo', 'jquery.bar', 'jquery.ui.baz', 'jquery.ui.quux' ],
 				'jquery.foo,bar|jquery.ui.baz,quux',
-			),
-			array(
+			],
+			[
 				'Regression fixed in r88706 with dotless names',
-				array( 'foo', 'bar', 'baz' ),
+				[ 'foo', 'bar', 'baz' ],
 				'foo,bar,baz',
-			),
-			array(
+			],
+			[
 				'Prefixless modules after a prefixed module',
-				array( 'single.module', 'foobar', 'foobaz' ),
+				[ 'single.module', 'foobar', 'foobaz' ],
 				'single.module|foobar,foobaz',
-			),
+			],
+		];
+	}
+
+	public static function provideAddSource() {
+		return [
+			[ 'examplewiki', '//example.org/w/load.php', 'examplewiki' ],
+			[ 'example2wiki', [ 'loadScript' => '//example.com/w/load.php' ], 'example2wiki' ],
+			[
+				[ 'foowiki' => '//foo.org/w/load.php', 'bazwiki' => '//baz.org/w/load.php' ],
+				null,
+				[ 'foowiki', 'bazwiki' ]
+			],
+			[
+				[ 'foowiki' => '//foo.org/w/load.php' ],
+				null,
+				false,
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider provideAddSource
+	 * @covers ResourceLoader::addSource
+	 * @covers ResourceLoader::getSources
+	 */
+	public function testAddSource( $name, $info, $expected ) {
+		$rl = new ResourceLoader;
+		if ( $expected === false ) {
+			$this->setExpectedException( 'MWException', 'ResourceLoader duplicate source addition error' );
+			$rl->addSource( $name, $info );
+		}
+		$rl->addSource( $name, $info );
+		if ( is_array( $expected ) ) {
+			foreach ( $expected as $source ) {
+				$this->assertArrayHasKey( $source, $rl->getSources() );
+			}
+		} else {
+			$this->assertArrayHasKey( $expected, $rl->getSources() );
+		}
+	}
+
+	public static function fakeSources() {
+		return [
+			'examplewiki' => [
+				'loadScript' => '//example.org/w/load.php',
+				'apiScript' => '//example.org/w/api.php',
+			],
+			'example2wiki' => [
+				'loadScript' => '//example.com/w/load.php',
+				'apiScript' => '//example.com/w/api.php',
+			],
+		];
+	}
+
+	public static function provideLoaderImplement() {
+		return [
+			[ [
+				'title' => 'Implement scripts, styles and messages',
+
+				'name' => 'test.example',
+				'scripts' => 'mw.example();',
+				'styles' => [ 'css' => [ '.mw-example {}' ] ],
+				'messages' => [ 'example' => '' ],
+				'templates' => [],
+
+				'expected' => 'mw.loader.implement( "test.example", function ( $, jQuery, require, module ) {
+mw.example();
+}, {
+    "css": [
+        ".mw-example {}"
+    ]
+}, {
+    "example": ""
+} );',
+			] ],
+			[ [
+				'title' => 'Implement scripts',
+
+				'name' => 'test.example',
+				'scripts' => 'mw.example();',
+				'styles' => [],
+				'messages' => new XmlJsCode( '{}' ),
+				'templates' => [],
+
+				'expected' => 'mw.loader.implement( "test.example", function ( $, jQuery, require, module ) {
+mw.example();
+} );',
+			] ],
+			[ [
+				'title' => 'Implement styles',
+
+				'name' => 'test.example',
+				'scripts' => [],
+				'styles' => [ 'css' => [ '.mw-example {}' ] ],
+				'messages' => new XmlJsCode( '{}' ),
+				'templates' => [],
+
+				'expected' => 'mw.loader.implement( "test.example", [], {
+    "css": [
+        ".mw-example {}"
+    ]
+} );',
+			] ],
+			[ [
+				'title' => 'Implement scripts and messages',
+
+				'name' => 'test.example',
+				'scripts' => 'mw.example();',
+				'styles' => [],
+				'messages' => [ 'example' => '' ],
+				'templates' => [],
+
+				'expected' => 'mw.loader.implement( "test.example", function ( $, jQuery, require, module ) {
+mw.example();
+}, {}, {
+    "example": ""
+} );',
+			] ],
+			[ [
+				'title' => 'Implement scripts and templates',
+
+				'name' => 'test.example',
+				'scripts' => 'mw.example();',
+				'styles' => [],
+				'messages' => new XmlJsCode( '{}' ),
+				'templates' => [ 'example.html' => '' ],
+
+				'expected' => 'mw.loader.implement( "test.example", function ( $, jQuery, require, module ) {
+mw.example();
+}, {}, {}, {
+    "example.html": ""
+} );',
+			] ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideLoaderImplement
+	 * @covers ResourceLoader::makeLoaderImplementScript
+	 */
+	public function testMakeLoaderImplementScript( $case ) {
+		$this->assertEquals(
+			$case['expected'],
+			ResourceLoader::makeLoaderImplementScript(
+				$case['name'],
+				$case['scripts'],
+				$case['styles'],
+				$case['messages'],
+				$case['templates']
+			)
 		);
 	}
-}
 
-/* Hooks */
-global $wgHooks;
-$wgHooks['ResourceLoaderRegisterModules'][] = 'ResourceLoaderTest::resourceLoaderRegisterModules';
+	/**
+	 * @covers ResourceLoader::getLoadScript
+	 */
+	public function testGetLoadScript() {
+		$this->setMwGlobals( 'wgResourceLoaderSources', [] );
+		$rl = new ResourceLoader();
+		$sources = self::fakeSources();
+		$rl->addSource( $sources );
+		foreach ( [ 'examplewiki', 'example2wiki' ] as $name ) {
+			$this->assertEquals( $rl->getLoadScript( $name ), $sources[$name]['loadScript'] );
+		}
+
+		try {
+			$rl->getLoadScript( 'thiswasneverreigstered' );
+			$this->assertTrue( false, 'ResourceLoader::getLoadScript should have thrown an exception' );
+		} catch ( MWException $e ) {
+			$this->assertTrue( true );
+		}
+	}
+
+	/**
+	 * @covers ResourceLoader::isModuleRegistered
+	 */
+	public function testIsModuleRegistered() {
+		$rl = new ResourceLoader();
+		$rl->register( 'test.module', new ResourceLoaderTestModule() );
+		$this->assertTrue( $rl->isModuleRegistered( 'test.module' ) );
+		$this->assertFalse( $rl->isModuleRegistered( 'test.modulenotregistered' ) );
+	}
+}

@@ -1,27 +1,12 @@
 <?php
 /**
  * @covers BadTitleError
- * @author Adam Shorland
+ * @author Addshore
  */
 class BadTitleErrorTest extends MediaWikiTestCase {
 
-	protected $wgOut;
-
-	protected function setUp() {
-		parent::setUp();
-		global $wgOut;
-		$this->wgOut = clone $wgOut;
-	}
-
-	protected function tearDown() {
-		parent::tearDown();
-		global $wgOut;
-		$wgOut = $this->wgOut;
-	}
-
 	public function testExceptionSetsStatusCode() {
-		global $wgOut;
-		$wgOut = $this->getMockWgOut();
+		$this->setMwGlobals( 'wgOut', $this->getMockWgOut() );
 		try {
 			throw new BadTitleError();
 		} catch ( BadTitleError $e ) {
