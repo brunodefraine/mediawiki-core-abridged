@@ -1418,6 +1418,7 @@ class OutputPage extends ContextSource {
 		if ( !$this->mParserOptions ) {
 			$this->mParserOptions = ParserOptions::newFromContext( $this->getContext() );
 			$this->mParserOptions->setEditSection( false );
+			$this->mParserOptions->setAllowUnsafeRawHtml( false );
 		}
 		return wfSetVar( $this->mParserOptions, $options );
 	}
@@ -2535,7 +2536,9 @@ $templates
 		} else {
 			$titleObj = Title::newFromText( $returnto );
 		}
-		if ( !is_object( $titleObj ) ) {
+		// We don't want people to return to external interwiki. That
+		// might potentially be used as part of a phishing scheme
+		if ( !is_object( $titleObj ) || $titleObj->isExternal() ) {
 			$titleObj = Title::newMainPage();
 		}
 

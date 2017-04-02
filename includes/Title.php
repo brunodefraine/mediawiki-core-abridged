@@ -1614,6 +1614,33 @@ class Title {
 	}
 
 	/**
+	 * Get a url appropriate for making redirects based on an untrusted url arg
+	 *
+	 * This is basically the same as getFullUrl(), but in the case of external
+	 * interwikis, we send the user to a landing page, to prevent possible
+	 * phishing attacks and the like.
+	 *
+	 * @note Uses current protocol by default, since technically relative urls
+	 *   aren't allowed in redirects per HTTP spec, so this is not suitable for
+	 *   places where the url gets cached, as might pollute between
+	 *   https and non-https users.
+	 * @see self::getLocalURL for the arguments.
+	 * @param array|string $query
+	 * @param string $proto Protocol type to use in URL
+	 * @return String. A url suitable to use in an HTTP location header.
+	 */
+	public function getFullUrlForRedirect( $query = '', $proto = PROTO_CURRENT ) {
+		$target = $this;
+		if ( $this->isExternal() ) {
+			$target = SpecialPage::getTitleFor(
+				'GoToInterwiki',
+				$this->getPrefixedDBKey()
+			);
+		}
+		return $target->getFullUrl( $query, false, $proto );
+	}
+
+	/**
 	 * Get a URL with no fragment or server name (relative URL) from a Title object.
 	 * If this page is generated with action=render, however,
 	 * $wgServer is prepended to make an absolute URL.
@@ -2249,6 +2276,17 @@ class Title {
 				&& !$this->userCan( 'bigdelete', $user ) && $this->isBigDeletion()
 			) {
 				$errors[] = array( 'delete-toobig', $wgLang->formatNum( $wgDeleteRevisionsLimit ) );
+			}
+		} elseif ( $action === 'undelete' ) {
+			if ( count( $this->getUserPermissionsErrorsInternal( 'edit', $user, $doExpensiveQueries, true ) ) ) {
+				// Undeleting implies editing
+				$errors[] = [ 'undelete-cantedit' ];
+			}
+			if ( !$this->exists()
+				&& count( $this->getUserPermissionsErrorsInternal( 'create', $user, $doExpensiveQueries, true ) )
+			) {
+				// Undeleting where nothing currently exists implies creating
+				$errors[] = [ 'undelete-cantcreate' ];
 			}
 		}
 		return $errors;

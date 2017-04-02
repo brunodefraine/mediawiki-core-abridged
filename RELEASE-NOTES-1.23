@@ -1,6 +1,32 @@
 Security reminder: MediaWiki does not require PHP's register_globals. If you
 have it on, turn it '''off''' if you can.
 
+== MediaWiki 1.23.16 ==
+This is a security and maintenance release of the MediaWiki 1.23 branch.
+
+=== Changes since 1.23.15 ===
+* (T68404) CSS3 attr() function with url type is no longer allowed
+  in inline styles.
+* (T156184) $wgRawHtml will no longer apply to internationalization messages.
+* Submitting the lgtoken and lgpassword parameters in the query string to
+  action=login is now deprecated and outputs a warning. They should be submitted
+  in the POST body instead.
+* (T109140) (T122209) SECURITY: Special:UserLogin and Special:Search allow redirect
+  to interwiki links.
+* (T144845) SECURITY: XSS in SearchHighlighter::highlightText() when
+  $wgAdvancedSearchHighlighting is true.
+* (T125177) SECURITY: API parameters may now be marked as "sensitive" to keep
+  their values out of the logs.
+* (T150044) SECURITY: "Mark all pages visited" on the watchlist now requires a CSRF
+  token.
+* (T156184) SECURITY: Escape content model/format url parameter in message.
+* (T151735) SECURITY: SVG filter evasion using default attribute values in DTD
+  declaration.
+* (T48143) SECURITY: Spam blacklist ineffective on encoded URLs inside file inclusion
+  syntax's link parameter.
+* (T108138) SECURITY: Sysops can undelete pages, although the page is protected against
+  it.
+
 == MediaWiki 1.23.15 ==
 
 This is a maintenance release of the MediaWiki 1.23 branch.

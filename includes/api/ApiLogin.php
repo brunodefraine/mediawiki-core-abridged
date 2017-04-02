@@ -56,6 +56,13 @@ class ApiLogin extends ApiBase {
 			return;
 		}
 
+		try {
+			$this->requirePostedParameters( array( 'password', 'token' ) );
+		} catch ( UsageException $ex ) {
+			// Make this a warning for now, upgrade to an error in 1.29.
+			$this->setWarning( $ex->getMessage() );
+		}
+
 		$params = $this->extractRequestParams();
 
 		$result = array();
@@ -236,6 +243,7 @@ class ApiLogin extends ApiBase {
 				),
 				'token' => array(
 					ApiBase::PROP_TYPE => 'string',
+					ApiBase::PARAM_SENSITIVE => true,
 					ApiBase::PROP_NULLABLE => true
 				),
 				'details' => array(
