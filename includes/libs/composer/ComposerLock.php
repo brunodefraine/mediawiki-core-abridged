@@ -15,10 +15,6 @@ class ComposerLock {
 		$this->contents = json_decode( file_get_contents( $location ), true );
 	}
 
-	public function getHash() {
-		return $this->contents['hash'];
-	}
-
 	/**
 	 * Dependencies currently installed according to composer.lock
 	 *
@@ -32,7 +28,7 @@ class ComposerLock {
 				'type' => $installed['type'],
 				'licenses' => isset( $installed['license'] ) ? $installed['license'] : [],
 				'authors' => isset( $installed['authors'] ) ? $installed['authors'] : [],
-				'description' => isset( $installed['description'] ) ? $installed['description']: '',
+				'description' => isset( $installed['description'] ) ? $installed['description'] : '',
 			];
 		}
 

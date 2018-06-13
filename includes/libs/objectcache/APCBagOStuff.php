@@ -42,8 +42,6 @@ class APCBagOStuff extends BagOStuff {
 	const KEY_SUFFIX = ':2';
 
 	/**
-	 * Constructor
-	 *
 	 * Available parameters are:
 	 *   - nativeSerialize:     If true, pass objects to apc_store(), and trust it
 	 *                          to serialize them correctly. If false, serialize
@@ -75,25 +73,35 @@ class APCBagOStuff extends BagOStuff {
 	}
 
 	protected function doGet( $key, $flags = 0 ) {
-		$val = apc_fetch( $key . self::KEY_SUFFIX );
+		return $this->getUnserialize(
+			apc_fetch( $key . self::KEY_SUFFIX )
+		);
+	}
 
-		if ( is_string( $val ) && !$this->nativeSerialize ) {
-			$val = $this->isInteger( $val )
-				? intval( $val )
-				: unserialize( $val );
+	protected function getUnserialize( $value ) {
+		if ( is_string( $value ) && !$this->nativeSerialize ) {
+			$value = $this->isInteger( $value )
+				? intval( $value )
+				: unserialize( $value );
 		}
-
-		return $val;
+		return $value;
 	}
 
 	public function set( $key, $value, $exptime = 0, $flags = 0 ) {
+		apc_store(
+			$key . self::KEY_SUFFIX,
+			$this->setSerialize( $value ),
+			$exptime
+		);
+
+		return true;
+	}
+
+	protected function setSerialize( $value ) {
 		if ( !$this->nativeSerialize && !$this->isInteger( $value ) ) {
 			$value = serialize( $value );
 		}
-
-		apc_store( $key . self::KEY_SUFFIX, $value, $exptime );
-
-		return true;
+		return $value;
 	}
 
 	public function delete( $key ) {

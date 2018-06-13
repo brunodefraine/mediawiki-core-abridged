@@ -35,13 +35,14 @@ abstract class RedirectSpecialPage extends UnlistedSpecialPage {
 
 	/**
 	 * @param string|null $subpage
+	 * @return Title|bool
 	 */
 	public function execute( $subpage ) {
 		$redirect = $this->getRedirect( $subpage );
 		$query = $this->getRedirectQuery();
 		// Redirect to a page title with possible query parameters
 		if ( $redirect instanceof Title ) {
-			$url = $redirect->getFullURL( $query );
+			$url = $redirect->getFullUrlForRedirect( $query );
 			$this->getOutput()->redirect( $url );
 
 			return $redirect;
@@ -52,8 +53,7 @@ abstract class RedirectSpecialPage extends UnlistedSpecialPage {
 
 			return $redirect;
 		} else {
-			$class = get_class( $this );
-			throw new MWException( "RedirectSpecialPage $class doesn't redirect!" );
+			$this->showNoRedirectPage();
 		}
 	}
 
@@ -105,6 +105,11 @@ abstract class RedirectSpecialPage extends UnlistedSpecialPage {
 	 */
 	public function personallyIdentifiableTarget() {
 		return false;
+	}
+
+	protected function showNoRedirectPage() {
+		$class = static::class;
+		throw new MWException( "RedirectSpecialPage $class doesn't redirect!" );
 	}
 }
 

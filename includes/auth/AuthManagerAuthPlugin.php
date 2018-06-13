@@ -20,6 +20,7 @@
 
 namespace MediaWiki\Auth;
 
+use Psr\Log\LoggerInterface;
 use User;
 
 /**
@@ -31,7 +32,7 @@ class AuthManagerAuthPlugin extends \AuthPlugin {
 	/** @var string|null */
 	protected $domain = null;
 
-	/** @var \\Psr\\Log\\LoggerInterface */
+	/** @var LoggerInterface */
 	protected $logger = null;
 
 	public function __construct() {
@@ -152,8 +153,9 @@ class AuthManagerAuthPlugin extends \AuthPlugin {
 	}
 
 	public function updateExternalDBGroups( $user, $addgroups, $delgroups = [] ) {
-		\Hooks::run( 'UserGroupsChanged', [ $user, $addgroups, $delgroups ] );
-		return true;
+		throw new \BadMethodCallException(
+			'Update of user groups via AuthPlugin is not supported with AuthManager.'
+		);
 	}
 
 	public function canCreateAccounts() {
@@ -161,35 +163,13 @@ class AuthManagerAuthPlugin extends \AuthPlugin {
 	}
 
 	public function addUser( $user, $password, $email = '', $realname = '' ) {
-		global $wgUser;
-
-		$data = [
-			'username' => $user->getName(),
-			'password' => $password,
-			'retype' => $password,
-			'email' => $email,
-			'realname' => $realname,
-		];
-		if ( $this->domain !== null && $this->domain !== '' ) {
-			$data['domain'] = $this->domain;
-		}
-		$reqs = AuthManager::singleton()->getAuthenticationRequests( AuthManager::ACTION_CREATE );
-		$reqs = AuthenticationRequest::loadRequestsFromSubmission( $reqs, $data );
-
-		$res = AuthManager::singleton()->beginAccountCreation( $wgUser, $reqs, 'null:' );
-		switch ( $res->status ) {
-			case AuthenticationResponse::PASS:
-				return true;
-			case AuthenticationResponse::FAIL:
-				// Hope it's not a PreAuthenticationProvider that failed...
-				$msg = $res->message instanceof \Message ? $res->message : new \Message( $res->message );
-				$this->logger->info( __METHOD__ . ': Authentication failed: ' . $msg->plain() );
-				return false;
-			default:
-				throw new \BadMethodCallException(
-					'AuthManager does not support such simplified account creation'
-				);
-		}
+		throw new \BadMethodCallException(
+			'Creation of users via AuthPlugin is not supported with '
+			. 'AuthManager. Generally, user creation should be left to either '
+			. 'Special:CreateAccount, auto-creation when triggered by a '
+			. 'SessionProvider or PrimaryAuthenticationProvider, or '
+			. 'User::newSystemUser().'
+		);
 	}
 
 	public function strict() {
